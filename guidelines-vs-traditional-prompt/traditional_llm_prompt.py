@@ -3,7 +3,10 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai_client = OpenAI(
+    base_url=os.getenv("LITELLM_PROVIDER_BASE_URL"),
+    api_key=os.getenv("LITELLM_PROVIDER_API_KEY")
+)
 
 
 TRADITIONAL_HUGE_PROMPT = """
@@ -228,7 +231,7 @@ async def call_traditional_llm(query: str, prompt: str) -> str:
     """Call traditional LLM with the given query and prompt."""
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4",
+            model=os.getenv("LITELLM_PROVIDER_MODEL_NAME").replace("openai/", ""),
             messages=[
                 {"role": "system", "content": prompt},
                 {"role": "user", "content": query}

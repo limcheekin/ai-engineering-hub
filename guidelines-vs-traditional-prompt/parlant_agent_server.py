@@ -2,6 +2,7 @@ import asyncio
 import os
 import parlant.sdk as p
 from dotenv import load_dotenv
+from litellm_service import LiteLLMService
 
 load_dotenv()
 
@@ -150,8 +151,14 @@ async def get_agent_contact(context: p.ToolContext) -> p.ToolResult:
 
 
 async def main() -> None:
+    def load_litellm_service(container: p.Container) -> p.NLPService:
+        return LiteLLMService(logger=container[p.Logger])
+    
     """Initialize the Parlant life insurance agent with tools and guidelines."""
-    async with p.Server(session_store="local") as server:
+    async with p.Server(
+        session_store="local",
+        nlp_service=load_litellm_service
+    ) as server:
         agent = await server.create_agent(
             name="Life Insurance Advisor",
             description="You are a helpful life insurance advisor who provides detailed, thorough answers to customer questions.",
