@@ -3,8 +3,28 @@ import os
 import parlant.sdk as p
 from dotenv import load_dotenv
 from litellm_service import LiteLLMService
+from limits import RateLimitItemPerMinute
+from limits.strategies import SlidingWindowCounterRateLimiter
 
 load_dotenv()
+
+# REF: https://www.parlant.io/docs/production/api-hardening#rate-limiting-customization-options
+class CustomAuthorizationPolicy(p.ProductionAuthorizationPolicy):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # preserve everything existing, but override specific ops
+        self.default_limiter = p.BasicRateLimiter(
+            rate_limit_item_per_operation={
+                **self.default_limiter.rate_limit_item_per_operation,   # keep other defaults
+                p.Operation.READ_SESSION: RateLimitItemPerMinute(2),
+                p.Operation.LIST_EVENTS: RateLimitItemPerMinute(1),
+                p.Operation.READ_AGENT: RateLimitItemPerMinute(1),
+                # add/override more operations here
+            },
+            limiter_type=SlidingWindowCounterRateLimiter,
+        )
+
 
 # Life Insurance Agent - Parlant's structured approach vs traditional prompts
 
@@ -154,10 +174,17 @@ async def main() -> None:
     def load_litellm_service(container: p.Container) -> p.NLPService:
         return LiteLLMService(logger=container[p.Logger])
     
+    async def configure_container(
+        container: p.Container
+    ) -> p.Container:
+        container[p.AuthorizationPolicy] = CustomAuthorizationPolicy()
+        return container    
+    
     """Initialize the Parlant life insurance agent with tools and guidelines."""
     async with p.Server(
         session_store="local",
-        nlp_service=load_litellm_service
+        nlp_service=load_litellm_service,
+        configure_container=configure_container,
     ) as server:
         agent = await server.create_agent(
             name="Life Insurance Advisor",
