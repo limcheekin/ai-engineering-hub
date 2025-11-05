@@ -5,11 +5,23 @@ description = "Parlant Guidelines vs Traditional Prompt: Life Insurance Agent Co
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "parlant>=3.0.2",
+    "torch==2.9.0",
+    "parlant[litellm]>=3.0.2",
     "parlant-client>=3.0.1",
     "python-dotenv>=1.0.1",
     "rich>=13.9.4",
     "openai>=1.0.0",
-    "litellm>=1.79.1",
-    "transformers>=4.46.3",
 ]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu" },
+]
+torchvision = [
+    { index = "pytorch-cpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
